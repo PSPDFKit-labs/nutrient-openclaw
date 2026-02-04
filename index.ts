@@ -22,7 +22,7 @@ import { checkCreditsTool } from './src/tools/check-credits.js';
  * Config: apiKey (required), sandboxDir (optional).
  */
 export default function nutrientPlugin(api: any) {
-  const config = api.getConfig();
+  const config = api.pluginConfig ?? {};
 
   // Resolve API key: config → env → lazy error on first use
   const apiKey = config.apiKey || process.env.NUTRIENT_API_KEY;
@@ -62,11 +62,20 @@ export default function nutrientPlugin(api: any) {
   for (const tool of tools) {
     api.registerTool({
       name: tool.name,
+      label: tool.description,
       description: tool.description,
       parameters: tool.parameters,
-      execute: (args: any) => tool.execute(args, ctx),
+      async execute(_toolCallId: string, params: any) {
+        const result = await tool.execute(params, ctx);
+        // Adapt ToolResponse → AgentToolResult format
+        const text = result.success
+          ? (result.output ?? 'Done.')
+          : `Error: ${result.error ?? 'Unknown error'}`;
+        return {
+          content: [{ type: 'text' as const, text }],
+          details: result,
+        };
+      },
     });
   }
-
-  return { name: 'nutrient', version: '0.1.0' };
 }

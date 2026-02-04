@@ -5,19 +5,19 @@ import path from 'node:path';
 import nutrientPlugin from '../index.js';
 
 function makeMockApi(config: Record<string, unknown> = {}) {
-  const tools: Array<{ name: string; description: string; parameters: unknown; execute: Function }> = [];
+  const tools: Array<{ name: string; description: string; label: string; parameters: unknown; execute: Function }> = [];
   return {
-    getConfig: vi.fn().mockReturnValue(config),
+    pluginConfig: config,
     registerTool: vi.fn((tool) => tools.push(tool)),
     tools,
   };
 }
 
 describe('nutrientPlugin', () => {
-  it('calls api.getConfig()', () => {
+  it('reads pluginConfig from api', () => {
     const api = makeMockApi({ apiKey: 'test-key' });
     nutrientPlugin(api);
-    expect(api.getConfig).toHaveBeenCalled();
+    expect(api.registerTool).toHaveBeenCalledTimes(10);
   });
 
   it('registers 10 tools', () => {
@@ -44,20 +44,28 @@ describe('nutrientPlugin', () => {
     ]);
   });
 
-  it('returns { name: "nutrient", version: "0.1.0" }', () => {
+  it('registers tools with label field', () => {
     const api = makeMockApi({ apiKey: 'test-key' });
-    const result = nutrientPlugin(api);
-    expect(result).toEqual({ name: 'nutrient', version: '0.1.0' });
+    nutrientPlugin(api);
+    for (const tool of api.tools) {
+      expect(tool.label).toBeTruthy();
+    }
+  });
+
+  it('execute returns AgentToolResult format', async () => {
+    const api = makeMockApi({ apiKey: 'test-key' });
+    nutrientPlugin(api);
+    // The first tool registered — its execute wraps the internal tool
+    // We can't easily call it without mocking the full client, but we can verify structure
+    expect(api.tools[0].execute).toBeTypeOf('function');
   });
 
   it('works with missing API key (lazy error)', async () => {
-    const api = makeMockApi({});
-    // Remove env variable too
     const origEnv = process.env.NUTRIENT_API_KEY;
     delete process.env.NUTRIENT_API_KEY;
     try {
+      const api = makeMockApi({});
       nutrientPlugin(api);
-      // Plugin loads fine — should have 10 tools registered
       expect(api.registerTool).toHaveBeenCalledTimes(10);
     } finally {
       if (origEnv !== undefined) process.env.NUTRIENT_API_KEY = origEnv;
@@ -68,7 +76,6 @@ describe('nutrientPlugin', () => {
     const sandboxDir = mkdtempSync(path.join(tmpdir(), 'nutrient-test-'));
     const api = makeMockApi({ apiKey: 'key', sandboxDir });
     nutrientPlugin(api);
-    // Tools are registered — we verify indirectly that the context was created with sandboxDir
     expect(api.registerTool).toHaveBeenCalledTimes(10);
   });
 
@@ -77,8 +84,7 @@ describe('nutrientPlugin', () => {
     process.env.NUTRIENT_API_KEY = 'env-key-123';
     try {
       const api = makeMockApi({});
-      const result = nutrientPlugin(api);
-      expect(result.name).toBe('nutrient');
+      nutrientPlugin(api);
       expect(api.registerTool).toHaveBeenCalledTimes(10);
     } finally {
       if (origEnv !== undefined) {

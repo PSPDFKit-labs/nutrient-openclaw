@@ -6,7 +6,7 @@
   "repository": "github:PSPDFKit-labs/nutrient-openclaw",
   "configSchema": {
     "type": "object",
-    "required": ["apiKey"],
+    "required": [],
     "additionalProperties": false,
     "properties": {
       "apiKey": {
