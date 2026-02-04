@@ -124,6 +124,22 @@ export function buildFormData(
 }
 
 /**
+ * Derive an output path from an input path by swapping the extension.
+ * If the input has no extension, appends the new one.
+ * Adds a suffix (e.g. "-converted") to avoid overwriting the input.
+ */
+export function deriveOutputPath(
+  inputPath: string,
+  newExtension: string,
+  suffix = '',
+): string {
+  const ext = path.extname(inputPath);
+  const base = ext ? inputPath.slice(0, -ext.length) : inputPath;
+  const normalizedExt = newExtension.startsWith('.') ? newExtension : `.${newExtension}`;
+  return `${base}${suffix}${normalizedExt}`;
+}
+
+/**
  * Guard: ensure the output path differs from the input path to prevent
  * overwriting a file that is still being read by the API.
  */

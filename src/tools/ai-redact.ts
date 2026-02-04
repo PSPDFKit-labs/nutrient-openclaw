@@ -13,6 +13,7 @@ import {
   assertOutputDiffersFromInput,
   readFileReference,
   writeResponseToFile,
+  deriveOutputPath,
 } from '../files.js';
 import type { ToolDefinition, ToolResponse } from '../types.js';
 
@@ -29,7 +30,7 @@ export const nutrient_ai_redact: ToolDefinition = {
 
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath'],
+    required: ['filePath'],
     properties: {
       filePath: {
         type: 'string',
@@ -37,7 +38,7 @@ export const nutrient_ai_redact: ToolDefinition = {
       },
       outputPath: {
         type: 'string',
-        description: 'Path for redacted output',
+        description: 'Path for redacted output. Auto-derived from input filename with -redacted suffix if omitted.',
       },
       criteria: {
         type: 'string',
@@ -54,14 +55,15 @@ export const nutrient_ai_redact: ToolDefinition = {
     try {
       const {
         filePath,
-        outputPath,
+        outputPath: rawOutputPath,
         criteria = 'All personally identifiable information',
       } = args as {
         filePath: string;
-        outputPath: string;
+        outputPath?: string;
         criteria?: string;
       };
 
+      const outputPath = rawOutputPath || deriveOutputPath(filePath, 'pdf', '-redacted');
       assertOutputDiffersFromInput(filePath, outputPath, ctx.sandboxDir);
 
       const fileRef = readFileReference(filePath, ctx.sandboxDir);

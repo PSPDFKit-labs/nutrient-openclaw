@@ -10,6 +10,7 @@ import {
   writeResponseToFile,
   buildFormData,
   assertOutputDiffersFromInput,
+  deriveOutputPath,
 } from '../files.js';
 
 export const convertToOfficeTool: ToolDefinition = {
@@ -18,7 +19,7 @@ export const convertToOfficeTool: ToolDefinition = {
     'Convert a PDF to an Office format (DOCX, XLSX, or PPTX).',
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath', 'format'],
+    required: ['filePath', 'format'],
     properties: {
       filePath: {
         type: 'string',
@@ -26,7 +27,7 @@ export const convertToOfficeTool: ToolDefinition = {
       },
       outputPath: {
         type: 'string',
-        description: 'Path for output Office file',
+        description: 'Path for output Office file. Auto-derived from input filename if omitted.',
       },
       format: {
         type: 'string',
@@ -38,7 +39,8 @@ export const convertToOfficeTool: ToolDefinition = {
 
   async execute(args, ctx): Promise<ToolResponse> {
     try {
-      assertOutputDiffersFromInput(args.filePath, args.outputPath, ctx.sandboxDir);
+      const outputPath = args.outputPath || deriveOutputPath(args.filePath, args.format);
+      assertOutputDiffersFromInput(args.filePath, outputPath, ctx.sandboxDir);
 
       const fileRef = readFileReference(args.filePath, ctx.sandboxDir);
       const fileRefs = new Map<string, FileReference>([[fileRef.key, fileRef]]);
@@ -51,9 +53,9 @@ export const convertToOfficeTool: ToolDefinition = {
       const body = buildFormData(instructions, fileRefs);
       const response = await ctx.client.post('build', body);
 
-      const outputPath = writeResponseToFile(
+      const writtenPath = writeResponseToFile(
         response.data as ArrayBuffer,
-        args.outputPath,
+        outputPath,
         ctx.sandboxDir,
       );
 
@@ -65,7 +67,7 @@ export const convertToOfficeTool: ToolDefinition = {
 
       return {
         success: true,
-        output: `${args.format.toUpperCase()} created at ${outputPath}`,
+        output: `${args.format.toUpperCase()} created at ${writtenPath}`,
         credits_used: response.creditsUsed ?? undefined,
       };
     } catch (e) {

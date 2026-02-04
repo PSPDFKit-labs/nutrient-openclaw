@@ -12,6 +12,7 @@ import {
   readFileReference,
   writeResponseToFile,
   assertOutputDiffersFromInput,
+  deriveOutputPath,
 } from '../files.js';
 
 /** Build the signature options JSON sent as the `data` FormData field. */
@@ -65,7 +66,7 @@ export const signTool: ToolDefinition = {
     'visible or invisible signatures, and optional watermark/graphic images.',
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath'],
+    required: ['filePath'],
     properties: {
       filePath: {
         type: 'string',
@@ -73,7 +74,7 @@ export const signTool: ToolDefinition = {
       },
       outputPath: {
         type: 'string',
-        description: 'Path for the signed output PDF',
+        description: 'Path for the signed output PDF. Auto-derived from input filename with -signed suffix if omitted.',
       },
       signatureType: {
         type: 'string',
@@ -131,7 +132,7 @@ export const signTool: ToolDefinition = {
     try {
       const {
         filePath,
-        outputPath,
+        outputPath: rawOutputPath,
         signatureType = 'cms',
         signerName,
         reason,
@@ -144,6 +145,7 @@ export const signTool: ToolDefinition = {
         graphicImagePath,
       } = args;
 
+      const outputPath = rawOutputPath || deriveOutputPath(filePath, 'pdf', '-signed');
       assertOutputDiffersFromInput(filePath, outputPath, ctx.sandboxDir);
 
       // Read the PDF — signing requires a local file, not a URL

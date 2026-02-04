@@ -10,6 +10,7 @@ import {
   writeResponseToFile,
   buildFormData,
   assertOutputDiffersFromInput,
+  deriveOutputPath,
 } from '../files.js';
 
 export const convertToPdfTool: ToolDefinition = {
@@ -19,7 +20,7 @@ export const convertToPdfTool: ToolDefinition = {
     'Supports page ranges, password-protected files, and HTML layout options.',
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath'],
+    required: ['filePath'],
     properties: {
       filePath: {
         type: 'string',
@@ -27,7 +28,7 @@ export const convertToPdfTool: ToolDefinition = {
       },
       outputPath: {
         type: 'string',
-        description: 'Path for output PDF',
+        description: 'Path for output PDF. If omitted, derives from input filename (e.g. report.docx → report.pdf)',
       },
       password: {
         type: 'string',
@@ -70,7 +71,8 @@ export const convertToPdfTool: ToolDefinition = {
 
   async execute(args, ctx): Promise<ToolResponse> {
     try {
-      assertOutputDiffersFromInput(args.filePath, args.outputPath, ctx.sandboxDir);
+      const outputPath = args.outputPath || deriveOutputPath(args.filePath, 'pdf');
+      assertOutputDiffersFromInput(args.filePath, outputPath, ctx.sandboxDir);
 
       const fileRef = readFileReference(args.filePath, ctx.sandboxDir);
       const fileRefs = new Map<string, FileReference>([[fileRef.key, fileRef]]);
@@ -91,9 +93,9 @@ export const convertToPdfTool: ToolDefinition = {
       const body = buildFormData(instructions, fileRefs);
       const response = await ctx.client.post('build', body);
 
-      const outputPath = writeResponseToFile(
+      const writtenPath = writeResponseToFile(
         response.data as ArrayBuffer,
-        args.outputPath,
+        outputPath,
         ctx.sandboxDir,
       );
 
@@ -105,7 +107,7 @@ export const convertToPdfTool: ToolDefinition = {
 
       return {
         success: true,
-        output: `PDF created at ${outputPath}`,
+        output: `PDF created at ${writtenPath}`,
         credits_used: response.creditsUsed ?? undefined,
       };
     } catch (e) {

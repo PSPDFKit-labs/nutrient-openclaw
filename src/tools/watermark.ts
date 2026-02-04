@@ -10,6 +10,7 @@ import {
   writeResponseToFile,
   buildFormData,
   assertOutputDiffersFromInput,
+  deriveOutputPath,
 } from '../files.js';
 
 export const watermarkTool: ToolDefinition = {
@@ -18,10 +19,10 @@ export const watermarkTool: ToolDefinition = {
     'Add a text or image watermark to a PDF. Supports opacity, rotation, font color, font size, and positioning.',
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath', 'watermarkType', 'width', 'height'],
+    required: ['filePath', 'watermarkType', 'width', 'height'],
     properties: {
       filePath: { type: 'string', description: 'Path to input PDF' },
-      outputPath: { type: 'string', description: 'Path for output PDF' },
+      outputPath: { type: 'string', description: 'Path for output PDF. Auto-derived from input filename with -watermarked suffix if omitted.' },
       watermarkType: {
         type: 'string',
         enum: ['text', 'image'],
@@ -66,7 +67,8 @@ export const watermarkTool: ToolDefinition = {
 
   async execute(args, ctx): Promise<ToolResponse> {
     try {
-      assertOutputDiffersFromInput(args.filePath, args.outputPath, ctx.sandboxDir);
+      const outputPath = args.outputPath || deriveOutputPath(args.filePath, 'pdf', '-watermarked');
+      assertOutputDiffersFromInput(args.filePath, outputPath, ctx.sandboxDir);
 
       const fileRef = readFileReference(args.filePath, ctx.sandboxDir);
       const fileRefs = new Map<string, FileReference>([[fileRef.key, fileRef]]);
@@ -102,9 +104,9 @@ export const watermarkTool: ToolDefinition = {
       const body = buildFormData(instructions, fileRefs);
       const response = await ctx.client.post('build', body);
 
-      const outputPath = writeResponseToFile(
+      const writtenPath = writeResponseToFile(
         response.data as ArrayBuffer,
-        args.outputPath,
+        outputPath,
         ctx.sandboxDir,
       );
 
@@ -116,7 +118,7 @@ export const watermarkTool: ToolDefinition = {
 
       return {
         success: true,
-        output: `Watermarked PDF created at ${outputPath}`,
+        output: `Watermarked PDF created at ${writtenPath}`,
         credits_used: response.creditsUsed ?? undefined,
       };
     } catch (e) {

@@ -11,6 +11,7 @@ import {
   buildFormData,
   readFileReference,
   writeResponseToFile,
+  deriveOutputPath,
 } from '../files.js';
 import type { ToolDefinition, ToolResponse } from '../types.js';
 
@@ -40,10 +41,10 @@ export const nutrient_redact: ToolDefinition = {
 
   parameters: {
     type: 'object',
-    required: ['filePath', 'outputPath', 'strategy'],
+    required: ['filePath', 'strategy'],
     properties: {
       filePath: { type: 'string', description: 'Path to input PDF' },
-      outputPath: { type: 'string', description: 'Path for redacted output PDF' },
+      outputPath: { type: 'string', description: 'Path for redacted output PDF. Auto-derived from input filename with -redacted suffix if omitted.' },
       strategy: {
         type: 'string',
         enum: ['preset', 'regex', 'text'],
@@ -86,7 +87,7 @@ export const nutrient_redact: ToolDefinition = {
     try {
       const {
         filePath,
-        outputPath,
+        outputPath: rawOutputPath,
         strategy,
         preset,
         regex,
@@ -97,7 +98,7 @@ export const nutrient_redact: ToolDefinition = {
         pageLimit,
       } = args as {
         filePath: string;
-        outputPath: string;
+        outputPath?: string;
         strategy: 'preset' | 'regex' | 'text';
         preset?: string;
         regex?: string;
@@ -107,6 +108,8 @@ export const nutrient_redact: ToolDefinition = {
         startPage?: number;
         pageLimit?: number;
       };
+
+      const outputPath = rawOutputPath || deriveOutputPath(filePath, 'pdf', '-redacted');
 
       // Validate strategy-specific required fields
       if (strategy === 'preset' && !preset) {
