@@ -1,0 +1,45 @@
+{
+  "name": "@nutrient-sdk/nutrient-openclaw",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin for document processing via Nutrient DWS API",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PSPDFKit-labs/nutrient-openclaw.git"
+  },
+  "homepage": "https://github.com/PSPDFKit-labs/nutrient-openclaw#readme",
+  "bugs": {
+    "url": "https://github.com/PSPDFKit-labs/nutrient-openclaw/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist/", "openclaw.plugin.json", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

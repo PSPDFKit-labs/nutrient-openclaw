@@ -1,0 +1,35 @@
+{
+  "id": "nutrient-openclaw",
+  "name": "Nutrient Document Processing",
+  "description": "Process, convert, sign, redact, OCR, and extract data from documents via the Nutrient DWS API.",
+  "version": "0.1.0",
+  "repository": "github:PSPDFKit-labs/nutrient-openclaw",
+  "configSchema": {
+    "type": "object",
+    "required": ["apiKey"],
+    "additionalProperties": false,
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "Nutrient DWS API key (from https://www.nutrient.io/)"
+      },
+      "sandboxDir": {
+        "type": "string",
+        "description": "Optional directory to restrict file reads/writes. When set, all file paths are resolved relative to this directory."
+      }
+    }
+  },
+  "uiHints": {
+    "apiKey": {
+      "label": "API Key",
+      "help": "Your Nutrient DWS API key",
+      "sensitive": true,
+      "placeholder": "pdf_live_..."
+    },
+    "sandboxDir": {
+      "label": "Sandbox Directory",
+      "help": "Restrict file operations to this directory (optional)",
+      "placeholder": "~/documents"
+    }
+  }
+}
