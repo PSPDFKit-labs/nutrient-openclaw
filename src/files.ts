@@ -115,7 +115,9 @@ export function buildFormData(
 
   for (const [key, ref] of fileRefs.entries()) {
     if (ref.file) {
-      const blob = new Blob([new Uint8Array(ref.file.buffer)]);
+      const blob = ref.mimeType
+        ? new Blob([new Uint8Array(ref.file.buffer)], { type: ref.mimeType })
+        : new Blob([new Uint8Array(ref.file.buffer)]);
       formData.append(key, blob, ref.name);
     }
   }
