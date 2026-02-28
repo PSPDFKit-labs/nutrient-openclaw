@@ -13,6 +13,18 @@ import {
   deriveOutputPath,
 } from '../files.js';
 
+function isHtmlInput(filePath: string): boolean {
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    try {
+      return /\.html?$/i.test(new URL(filePath).pathname);
+    } catch {
+      return /\.html?$/i.test(filePath);
+    }
+  }
+
+  return /\.html?$/i.test(filePath);
+}
+
 export const convertToPdfTool: ToolDefinition = {
   name: 'nutrient_convert_to_pdf',
   description:
@@ -74,12 +86,20 @@ export const convertToPdfTool: ToolDefinition = {
       const outputPath = args.outputPath || deriveOutputPath(args.filePath, 'pdf');
       assertOutputDiffersFromInput(args.filePath, outputPath, ctx.sandboxDir);
 
+      const inputIsHtml = isHtmlInput(args.filePath);
       const fileRef = readFileReference(args.filePath, ctx.sandboxDir);
-      const fileRefs = new Map<string, FileReference>([[fileRef.key, fileRef]]);
+      const fileRefs = new Map<string, FileReference>([
+        [
+          fileRef.key,
+          inputIsHtml && fileRef.file
+            ? { ...fileRef, mimeType: 'text/html' }
+            : fileRef,
+        ],
+      ]);
 
       // Build the part entry
       const part: Record<string, unknown> = {
-        file: fileRef.url ?? fileRef.key,
+        [inputIsHtml ? 'html' : 'file']: fileRef.url ?? fileRef.key,
       };
       if (args.password) part.password = args.password;
       if (args.pages) part.pages = args.pages;

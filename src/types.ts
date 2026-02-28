@@ -90,6 +90,7 @@ export interface FileReference {
     buffer: Buffer;
     path: string;
   };
+  mimeType?: string;
   url?: string;
   name: string;
 }

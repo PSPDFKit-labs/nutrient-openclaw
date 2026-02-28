@@ -6,6 +6,22 @@ import type { ToolContext } from '../../src/types.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
+function getBuildBody(ctx: ToolContext): FormData | Record<string, unknown> {
+  const call = (ctx.client.post as any).mock.calls.at(-1);
+  expect(call[0]).toBe('build');
+  return call[1];
+}
+
+function getInstructions(body: FormData | Record<string, unknown>): Record<string, any> {
+  if (body instanceof FormData) {
+    const instructionsRaw = body.get('instructions');
+    expect(typeof instructionsRaw).toBe('string');
+    return JSON.parse(instructionsRaw as string);
+  }
+
+  return body as Record<string, any>;
+}
+
 describe('nutrient_convert_to_pdf', () => {
   let ctx: ToolContext;
 
@@ -26,7 +42,10 @@ describe('nutrient_convert_to_pdf', () => {
     );
     expect(result.success).toBe(true);
     expect(result.output).toContain('output.pdf');
-    expect(ctx.client.post).toHaveBeenCalledWith('build', expect.anything());
+    const body = getBuildBody(ctx);
+    const instructions = getInstructions(body);
+    expect(instructions.parts[0].file).toBeTruthy();
+    expect(instructions.parts[0].html).toBeUndefined();
     expect(fs.existsSync(path.join(ctx.sandboxDir!, 'output.pdf'))).toBe(true);
   });
 
@@ -41,8 +60,8 @@ describe('nutrient_convert_to_pdf', () => {
     expect(call[0]).toBe('build');
   });
 
-  it('forwards HTML layout options', async () => {
-    writeSandboxFile(ctx.sandboxDir!, 'page.html');
+  it('uses part.html for local HTML and keeps htmlLayout on part.layout', async () => {
+    writeSandboxFile(ctx.sandboxDir!, 'page.html', '<html><body>test</body></html>');
     await convertToPdfTool.execute(
       {
         filePath: 'page.html',
@@ -51,7 +70,35 @@ describe('nutrient_convert_to_pdf', () => {
       },
       ctx,
     );
-    expect(ctx.client.post).toHaveBeenCalled();
+
+    const body = getBuildBody(ctx);
+    expect(body).toBeInstanceOf(FormData);
+
+    const instructions = getInstructions(body);
+    expect(instructions.parts[0].html).toBeTruthy();
+    expect(instructions.parts[0].file).toBeUndefined();
+    expect(instructions.parts[0].layout).toEqual({ orientation: 'landscape', size: 'A4' });
+
+    const htmlPart = (body as FormData).get(instructions.parts[0].html);
+    expect(htmlPart).toBeTruthy();
+    expect(typeof htmlPart).not.toBe('string');
+    if (htmlPart && typeof htmlPart !== 'string') {
+      expect(htmlPart.type).toBe('text/html');
+    }
+  });
+
+  it('uses part.html for HTML URLs', async () => {
+    const htmlUrl = 'https://example.com/page.html?utm=test';
+    await convertToPdfTool.execute(
+      { filePath: htmlUrl, outputPath: 'out.pdf' },
+      ctx,
+    );
+
+    const body = getBuildBody(ctx);
+    expect(body).not.toBeInstanceOf(FormData);
+    const instructions = getInstructions(body);
+    expect(instructions.parts[0].html).toBe(htmlUrl);
+    expect(instructions.parts[0].file).toBeUndefined();
   });
 
   it('forwards page ranges', async () => {
