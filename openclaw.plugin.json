@@ -2,7 +2,7 @@
   "id": "nutrient-openclaw",
   "name": "Nutrient Document Processing",
   "description": "Process, convert, sign, redact, OCR, and extract data from documents via the Nutrient DWS API.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": "github:PSPDFKit-labs/nutrient-openclaw",
   "configSchema": {
     "type": "object",

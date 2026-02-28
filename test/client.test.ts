@@ -50,7 +50,7 @@ describe('makeClient', () => {
     await client.post('build', {});
 
     const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[1].headers['User-Agent']).toBe('NutrientOpenClawPlugin/0.1.0');
+    expect(call[1].headers['User-Agent']).toBe('NutrientOpenClawPlugin');
   });
 
   it('sends Content-Type: application/json for object bodies', async () => {
