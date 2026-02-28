@@ -12,13 +12,14 @@ import type { NutrientClient, NutrientResponse } from './types.js';
 const API_BASE = 'https://api.nutrient.io';
 const CREDIT_USAGE_HEADER = 'x-pspdfkit-credit-usage';
 const REMAINING_CREDITS_HEADER = 'x-pspdfkit-remaining-credits';
+const USER_AGENT = 'NutrientOpenClawPlugin';
 
 /**
  * Create an HTTP client bound to a specific API key.
  *
  * Every request includes:
  * - `Authorization: Bearer <apiKey>`
- * - `User-Agent: NutrientOpenClawPlugin/0.1.0`
+ * - `User-Agent: NutrientOpenClawPlugin`
  *
  * Credit headers (`x-pspdfkit-credit-usage`, `x-pspdfkit-remaining-credits`)
  * are extracted from every response and returned in the `NutrientResponse`.
@@ -33,7 +34,7 @@ export function makeClient(apiKey: string): NutrientClient {
       const url = `${API_BASE}/${endpoint}`;
       const headers: Record<string, string> = {
         Authorization: `Bearer ${apiKey}`,
-        'User-Agent': 'NutrientOpenClawPlugin/0.1.0',
+        'User-Agent': USER_AGENT,
       };
 
       const isFormData = body instanceof FormData;

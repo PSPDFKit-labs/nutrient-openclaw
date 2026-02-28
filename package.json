@@ -1,6 +1,6 @@
 {
   "name": "@nutrient-sdk/nutrient-openclaw",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenClaw plugin for document processing via Nutrient DWS API",
   "license": "MIT",
   "repository": {
@@ -20,6 +20,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
+    "sync:version": "node ./scripts/sync-version.mjs",
+    "release:check": "npm run lint && npm test",
+    "preversion": "npm run release:check",
+    "version": "npm run sync:version && git add openclaw.plugin.json",
     "prepublishOnly": "npm run build && npm run test"
   },
   "openclaw": {
