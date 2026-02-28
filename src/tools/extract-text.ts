@@ -42,21 +42,28 @@ export const nutrient_extract_text: ToolDefinition = {
           "'key-values' for detected key-value pairs (phone numbers, emails, dates, etc.)",
       },
       language: {
-        type: ['string', 'array'],
+        type: 'string',
         description:
           "OCR language(s) for text extraction (default: 'english'). " +
-          'Can be a single language string or an array of languages.',
+          "Use a single language or a comma-separated list (for example: 'english,german').",
         default: 'english',
       },
     },
   },
 
   async execute(
-    args: { filePath: string; mode?: ExtractionMode; language?: string | string[] },
+    args: { filePath: string; mode?: ExtractionMode; language?: string },
     ctx: ToolContext,
   ): Promise<ToolResponse> {
     try {
       const { filePath, mode = 'text', language = 'english' } = args;
+      const normalizedLanguage =
+        typeof language === 'string' && language.includes(',')
+          ? language
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : language;
 
       const fileRef = readFileReference(filePath, ctx.sandboxDir);
       const fileRefs = new Map([[fileRef.key, fileRef]]);
@@ -64,7 +71,7 @@ export const nutrient_extract_text: ToolDefinition = {
       const output: Record<string, unknown> = {
         type: 'json-content',
         [MODE_FLAGS[mode]]: true,
-        language,
+        language: normalizedLanguage,
       };
 
       const instructions = {
